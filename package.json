@@ -1,0 +1,39 @@
+{
+  "name": "fet-space-server",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/JIM440/fet-space-server#readme",
+  "bugs": {
+    "url": "https://github.com/JIM440/fet-space-server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JIM440/fet-space-server.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "node dist/main.js",
+    "dev": "nodemon src/main.js",
+    "build": "mkdir -p dist && cp -r src/. dist/ && find dist/ -type f -not -name '*.js' -delete",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev --name init",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.9.0"
+  }
+}

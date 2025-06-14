@@ -1,0 +1,400 @@
+Sample Data for Fet-Space Server API Testing
+===========================================
+
+This file provides sample data for testing the Fet-Space server API routes, using Cameroonian names and context. Use this data in Postman or to seed your database with Prisma. All data reflects the authentication changes (matricule_number for students, email for teachers/admins) and real-time features.
+
+Authentication Endpoints
+------------------------
+
+### POST /auth/login
+- Student Example:
+  - Request Body:
+    {
+      "identifier": "CMSTU001",
+      "password": "student123",
+      "role": "Student"
+    }
+  - Context: "CMSTU001" is the matricule number for a student named Ngono Mbella.
+  - Expected User Data: 
+    {
+      "userId": 1,
+      "name": "Ngono Mbella",
+      "role": "Student",
+      "Students": {
+        "matricule_number": "CMSTU001",
+        "nationality": "Cameroon",
+        "level": "Level 100",
+        "institutional_email": "ngono.mbella@ub.ac.cm"
+      }
+    }
+
+- Teacher Example:
+  - Request Body:
+    {
+      "identifier": "tanyi.nkeng@ub.ac.cm",
+      "password": "teacher123",
+      "role": "Teacher"
+    }
+  - Context: "tanyi.nkeng@ub.ac.cm" is the email for a teacher named Tanyi Nkeng.
+  - Expected User Data: 
+    {
+      "userId": 2,
+      "name": "Tanyi Nkeng",
+      "role": "Teacher",
+      "Teachers": {
+        "user_id": 2,
+        "user": {
+          "user_id": 2,
+          "name": "Tanyi Nkeng",
+          "email": "tanyi.nkeng@ub.ac.cm",
+          "role": "Teacher"
+        }
+      }
+    }
+
+- Admin Example:
+  - Request Body:
+    {
+      "identifier": "ekema.tita@admin.cm",
+      "password": "admin123",
+      "role": "Admin"
+    }
+  - Context: "ekema.tita@admin.cm" is the email for an admin named Ekema Tita.
+  - Expected User Data: 
+    {
+      "userId": 3,
+      "name": "Ekema Tita",
+      "role": "Admin",
+      "Admins": {
+        "user_id": 3,
+        "user": {
+          "user_id": 3,
+          "name": "Ekema Tita",
+          "email": "ekema.tita@admin.cm",
+          "role": "Admin"
+        }
+      }
+    }
+
+- POST /auth/refresh
+  - Request Body:
+    {
+      "refreshToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+  - Context: Use the refreshToken obtained from a successful /auth/login request (e.g., for Ngono Mbella).
+  - Expected Response: New accessToken and refreshToken with the same userId (e.g., 1).
+
+Health Check Route
+------------------
+
+- GET /health
+  - Request: No body or headers required.
+  - Context: Verifies server and database health for all users.
+  - Expected Response: 
+    {
+      "status": "healthy",
+      "message": "Server and database are running"
+    }
+  - Error Response: 
+    {
+      "status": "unhealthy",
+      "message": "Server or database error",
+      "error": "Database connection failed"
+    }
+
+Student Routes
+--------------
+
+- GET /student/details
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Context: Retrieves details for Ngono Mbella.
+  - Expected Response: 
+    {
+      "user_id": 1,
+      "name": "Ngono Mbella",
+      "email": "ngono.mbella@ub.ac.cm",
+      "role": "Student",
+      "Students": {
+        "matricule_number": "CMSTU001",
+        "nationality": "Cameroon",
+        "level": "Level 100",
+        "institutional_email": "ngono.mbella@ub.ac.cm"
+      }
+    }
+
+- PUT /student/details
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Request Body:
+    {
+      "name": "Ngono Mbella Updated",
+      "phone_number": "+237675432109"
+    }
+  - Context: Updates Ngono Mbella's name and phone number.
+  - Expected Response: Updated user object with new values.
+
+- GET /student/courses
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Context: Retrieves courses enrolled by Ngono Mbella.
+  - Expected Response:
+    [
+      {
+        "course_id": 1,
+        "title": "Mathematiques de Base",
+        "Teachers": [
+          {
+            "user_id": 2,
+            "name": "Tanyi Nkeng",
+            "user": {
+              "user_id": 2,
+              "name": "Tanyi Nkeng",
+              "email": "tanyi.nkeng@ub.ac.cm",
+              "role": "Teacher"
+            }
+          }
+        ]
+      }
+    ]
+
+- GET /student/deadlines
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Context: Retrieves deadlines for Ngono Mbella’s courses.
+  - Expected Response:
+    [
+      {
+        "assignment_id": 1,
+        "title": "Devoir 1",
+        "due_date": "2025-06-20T12:00:00Z"
+      }
+    ]
+
+- POST /student/courses/join
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Request Body:
+    {
+      "courseId": 2
+    }
+  - Context: Ngono Mbella joins a new course (e.g., Physique 101).
+  - Expected Response: Enrollment record.
+
+- GET /announcements/general
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Query Parameters: page=1&limit=10
+  - Context: Retrieves general announcements for Ngono Mbella.
+  - Expected Response:
+    [
+      {
+        "announcement_id": 1,
+        "title": "Debut de Semestre",
+        "content": "Les cours commencent le 15 Juin.",
+        "created_at": "2025-06-14T10:00:00Z",
+        "admin": {
+          "user_id": 3,
+          "user": {
+            "user_id": 3,
+            "name": "Ekema Tita",
+            "email": "ekema.tita@admin.cm",
+            "role": "Admin"
+          }
+        },
+        "Polls": [],
+        "Attachments": []
+      }
+    ]
+
+- GET /announcements/course
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Query Parameters: courseId=1&page=1&limit=10
+  - Context: Retrieves course announcements for Ngono Mbella’s Math course.
+  - Expected Response:
+    [
+      {
+        "announcement_id": 1,
+        "title": "Controle Demain",
+        "content": "Preparer le Chapitre 1.",
+        "course_id": 1,
+        "created_at": "2025-06-14T10:00:00Z",
+        "teacher": {
+          "user_id": 2,
+          "user": {
+            "user_id": 2,
+            "name": "Tanyi Nkeng",
+            "email": "tanyi.nkeng@ub.ac.cm",
+            "role": "Teacher"
+          }
+        },
+        "Polls": [],
+        "Attachments": []
+      }
+    ]
+
+Teacher Routes
+--------------
+
+- POST /teacher/courses
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Request Body:
+    {
+      "title": "Physique 101",
+      "subtitle": "Introduction a la Physique"
+    }
+  - Context: Tanyi Nkeng creates a new course.
+  - Expected Response: New course object.
+
+- POST /teacher/courses/students
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Request Body:
+    {
+      "courseId": 1,
+      "studentId": 1
+    }
+  - Context: Tanyi Nkeng adds Ngono Mbella to Math course.
+  - Expected Response: Enrollment record.
+
+- DELETE /teacher/courses/students
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Request Body:
+    {
+      "courseId": 1,
+      "studentId": 1
+    }
+  - Context: Tanyi Nkeng removes Ngono Mbella from Math course.
+  - Expected Response: Deletion confirmation.
+
+- GET /teacher/courses/mine
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Context: Retrieves courses taught by Tanyi Nkeng.
+  - Expected Response:
+    [
+      {
+        "course_id": 1,
+        "title": "Mathematiques de Base",
+        "teacher_id": 2
+      }
+    ]
+
+- POST /announcements/course
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Request Body:
+    {
+      "courseId": 1,
+      "title": "Examen Approchant",
+      "content": "Revision du Chapitre 2."
+    }
+  - Context: Tanyi Nkeng posts an announcement for Math course.
+  - Expected Response: New announcement object.
+
+Admin Routes
+------------
+
+- GET /admin/teachers
+  - Headers: Authorization: Bearer <accessToken> (from Ekema Tita login).
+  - Context: Retrieves all teachers for Ekema Tita.
+  - Expected Response:
+    [
+      {
+        "user_id": 2,
+        "name": "Tanyi Nkeng",
+        "email": "tanyi.nkeng@ub.ac.cm",
+        "role": "Teacher"
+      }
+    ]
+
+- POST /announcements/general
+  - Headers: Authorization: Bearer <accessToken> (from Ekema Tita login).
+  - Request Body:
+    {
+      "title": "Fete Nationale",
+      "content": "Cours suspendus le 20 Mai."
+    }
+  - Context: Ekema Tita posts a general announcement.
+  - Expected Response: New announcement object.
+
+Comments Routes
+---------------
+
+- POST /comments
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Request Body:
+    {
+      "type": "courseAnnouncement",
+      "targetId": 1,
+      "content": "Merci pour l'info!"
+    }
+  - Context: Ngono Mbella comments on a course announcement.
+  - Expected Response: New comment object.
+
+- GET /comments
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Query Parameters: type=courseAnnouncement&targetId=1&page=1&limit=10
+  - Context: Retrieves comments for a course announcement.
+  - Expected Response:
+    [
+      {
+        "comment_id": 1,
+        "content": "Merci pour l'info!",
+        "user": { "name": "Ngono Mbella", "role": "Student" },
+        "created_at": "2025-06-14T10:00:00Z"
+      }
+    ]
+
+Polls Routes
+------------
+
+- POST /polls
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - Request Body:
+    {
+      "announcementId": 1,
+      "type": "course",
+      "allowMultipleAnswers": false
+    }
+  - Context: Tanyi Nkeng creates a poll for a course announcement.
+  - Expected Response: New poll object.
+
+- POST /polls/respond
+  - Headers: Authorization: Bearer <accessToken> (from Ngono Mbella login).
+  - Request Body:
+    {
+      "pollId": 1,
+      "optionId": 1
+    }
+  - Context: Ngono Mbella responds to a poll.
+  - Expected Response: New response object.
+
+- GET /polls/:pollId/responses
+  - Headers: Authorization: Bearer <accessToken> (from Tanyi Nkeng login).
+  - URL: http://localhost:3000/polls/1/responses
+  - Context: Tanyi Nkeng retrieves poll responses.
+  - Expected Response:
+    [
+      {
+        "response_id": 1,
+        "user": { "name": "Ngono Mbella", "role": "Student" },
+        "responded_at": "2025-06-14T10:00:00Z"
+      }
+    ]
+
+How to Use
+----------
+1. Seed the Database:
+   - Use Prisma Studio or a seed script to insert this sample data into your PostgreSQL database.
+   - Example Seed Data:
+     - Users:
+       [
+         {"user_id": 1, "name": "Ngono Mbella", "email": "ngono.mbella@ub.ac.cm", "password": "$2b$10$...hashed...", "role": "Student"},
+         {"user_id": 2, "name": "Tanyi Nkeng", "email": "tanyi.nkeng@ub.ac.cm", "password": "$2b$10$...hashed...", "role": "Teacher"},
+         {"user_id": 3, "name": "Ekema Tita", "email": "ekema.tita@admin.cm", "password": "$2b$10$...hashed...", "role": "Admin"}
+       ]
+     - Students: {"user_id": 1, "matricule_number": "CMSTU001", "nationality": "Cameroon", "level": "Level 100", "institutional_email": "ngono.mbella@ub.ac.cm"}
+     - Teachers: {"user_id": 2}
+     - Admins: {"user_id": 3}
+     - Courses: {"course_id": 1, "title": "Mathematiques de Base", "subtitle": "Introduction", "teacher_id": 2}
+     - Course_Student: {"course_id": 1, "student_id": 1}
+     - General_Announcements: {"announcement_id": 1, "admin_id": 3, "title": "Debut de Semestre", "content": "Les cours commencent le 15 Juin.", "created_at": "2025-06-14T10:00:00Z"}
+     - Course_Announcements: {"announcement_id": 1, "course_id": 1, "teacher_id": 2, "title": "Controle Demain", "content": "Preparer le Chapitre 1.", "created_at": "2025-06-14T10:00:00Z"}
+
+2. Postman Testing:
+   - Copy the request bodies and headers into Postman, replacing <accessToken> with tokens obtained from /auth/login.
+
+3. Real-Time Testing:
+   - Use a WebSocket client (e.g., Socket.IO Client) to join rooms like 'course_1' and listen for events after triggering actions (e.g., posting an announcement).

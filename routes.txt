@@ -1,0 +1,560 @@
+Fet-Space Server API Routes Documentation
+========================================
+
+This document provides an overview of the API routes for the Fet-Space server application, built with Express.js, Prisma, and Socket.IO. Use this guide to test the endpoints with Postman, ensuring you include the appropriate headers, bodies, and authentication tokens. Real-time features (e.g., announcements, polls, comments) are supported via WebSocket (Socket.IO) and require a WebSocket client for full testing.
+
+Base URL
+--------
+http://localhost:8989
+
+Authentication
+--------------
+
+All protected routes require an Authorization header with a valid Bearer token. Use the /auth/login endpoint to obtain access and refresh tokens.
+
+### Authentication Endpoints
+
+#### POST /auth/login
+- Description: Authenticate a user and receive access and refresh tokens.
+- Roles: Any (Student, Teacher, Admin, SuperAdmin).
+- Request Body:
+  {
+    "identifier": "string", // matricule_number for Student, email for Teacher/Admin/SuperAdmin
+    "password": "string",
+    "role": "string" // "Student", "Teacher", "Admin", or "SuperAdmin"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/auth/login
+  - Body (raw JSON):
+    {
+      "identifier": "CMSTU001", // or "tanyi.nkeng@ub.ac.cm" for Teacher/Admin
+      "password": "password123",
+      "role": "Student" // or "Teacher", "Admin", "SuperAdmin"
+    }
+- Success Response (200):
+  {
+    "success": true,
+    "accessToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "message": "Login successful",
+    "user": {
+      "userId": 1,
+      "role": "Student"
+    }
+  }
+- Error Response (401):
+  {
+    "message": "Invalid credentials"
+  }
+
+#### POST /auth/refresh
+- Description: Refresh an expired access token using a valid refresh token.
+- Roles: Any (token-based).
+- Request Body:
+  {
+    "refreshToken": "string"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/auth/refresh
+  - Body (raw JSON):
+    {
+      "refreshToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+- Success Response (200):
+  {
+    "success": true,
+    "accessToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "message": "Token refreshed"
+  }
+- Error Response (401):
+  {
+    "message": "Invalid or expired refresh token"
+  }
+
+Health Check Route
+------------------
+
+#### GET /health
+- Description: Check the health status of the server and database.
+- Roles: Public (no authentication required).
+- Query Parameters: None
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/health
+- Success Response (200):
+  {
+    "status": "healthy",
+    "message": "Server and database are running"
+  }
+- Error Response (503):
+  {
+    "status": "unhealthy",
+    "message": "Server or database error",
+    "error": "Database connection failed"
+  }
+
+Student Routes
+--------------
+
+All student routes require a valid Authorization header with a Student role token.
+
+#### GET /student/details
+- Description: Retrieve the authenticated student's details.
+- Roles: Student
+- Headers: Authorization: Bearer <accessToken>
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/student/details
+  - Headers:
+    - Key: Authorization, Value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+- Success Response (200):
+  {
+    "user_id": 1,
+    "name": "Ngono Mbella",
+    "email": "ngono.mbella@ub.ac.cm",
+    "role": "Student",
+    "Students": {
+      "matricule_number": "CMSTU001",
+      "nationality": "Cameroon",
+      "level": "Level 100",
+      "institutional_email": "ngono.mbella@ub.ac.cm"
+    }
+  }
+- Error Response (403):
+  {
+    "message": "Forbidden"
+  }
+
+#### PUT /student/details
+- Description: Update the authenticated student's details.
+- Roles: Student
+- Request Body:
+  {
+    "name": "string",
+    "phone_number": "string"
+  }
+- Example Request (Postman):
+  - Method: PUT
+  - URL: http://localhost:8989/student/details
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "name": "Ngono Mbella Updated",
+      "phone_number": "+237675432109"
+    }
+
+#### GET /student/courses
+- Description: Retrieve the list of courses the student is enrolled in.
+- Roles: Student
+- Headers: Authorization: Bearer <accessToken>
+- Query Parameters: None
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/student/courses
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "course_id": 1,
+      "title": "Mathematiques de Base",
+      "Teachers": [
+        {
+          "user_id": 2,
+          "name": "Tanyi Nkeng",
+          "user": {
+            "user_id": 2,
+            "name": "Tanyi Nkeng",
+            "email": "tanyi.nkeng@ub.ac.cm",
+            "role": "Teacher"
+          }
+        }
+      ]
+    }
+  ]
+
+#### GET /student/deadlines
+- Description: Retrieve upcoming assignment deadlines for enrolled courses.
+- Roles: Student
+- Headers: Authorization: Bearer <accessToken>
+- Query Parameters: None
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/student/deadlines
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "assignment_id": 1,
+      "title": "Devoir 1",
+      "due_date": "2025-06-20T12:00:00Z"
+    }
+  ]
+
+#### POST /student/courses/join
+- Description: Join a course as a student.
+- Roles: Student
+- Request Body:
+  {
+    "courseId": "number"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/student/courses/join
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "courseId": 1
+    }
+
+#### GET /announcements/general
+- Description: Retrieve paginated general announcements (real-time updates via WebSocket).
+- Roles: Student, Teacher, Admin
+- Headers: Authorization: Bearer <accessToken>
+- Query Parameters: page=number, limit=number (default: page=1, limit=10)
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/announcements/general?page=1&limit=10
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "announcement_id": 1,
+      "title": "Debut de Semestre",
+      "content": "Les cours commencent le 15 Juin.",
+      "created_at": "2025-06-14T09:00:00Z",
+      "admin": {
+        "user_id": 3,
+        "user": {
+          "user_id": 3,
+          "name": "Ekema Tita",
+          "email": "ekema.tita@admin.cm",
+          "role": "Admin"
+        }
+      },
+      "Polls": [],
+      "Attachments": []
+    }
+  ]
+- Real-Time: Subscribe to WebSocket room 'generalAnnouncements' for 'newAnnouncement', 'updateAnnouncement', 'deleteAnnouncement' events.
+
+#### GET /announcements/course
+- Description: Retrieve paginated course announcements (real-time updates via WebSocket).
+- Roles: Student, Teacher
+- Headers: Authorization: Bearer <accessToken>
+- Query Parameters: courseId=number, page=number, limit=number (default: page=1, limit=10)
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/announcements/course?courseId=1&page=1&limit=10
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "announcement_id": 1,
+      "title": "Controle Demain",
+      "content": "Preparer le Chapitre 1.",
+      "course_id": 1,
+      "created_at": "2025-06-14T09:00:00Z",
+      "teacher": {
+        "user_id": 2,
+        "user": {
+          "user_id": 2,
+          "name": "Tanyi Nkeng",
+          "email": "tanyi.nkeng@ub.ac.cm",
+          "role": "Teacher"
+        }
+      },
+      "Polls": [],
+      "Attachments": []
+    }
+  ]
+- Real-Time: Subscribe to WebSocket room 'course_1' (replace 1 with courseId) for 'newAnnouncement', 'updateAnnouncement', 'deleteAnnouncement' events.
+
+Teacher Routes
+--------------
+
+All teacher routes require a valid Authorization header with a Teacher role token.
+
+#### POST /teacher/courses
+- Description: Create a new course as a teacher.
+- Roles: Teacher
+- Request Body:
+  {
+    "title": "string",
+    "subtitle": "string"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/teacher/courses
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "title": "Physique 101",
+      "subtitle": "Introduction a la Physique"
+    }
+
+#### POST /teacher/courses/students
+- Description: Add a student to a course.
+- Roles: Teacher
+- Request Body:
+  {
+    "courseId": "number",
+    "studentId": "number"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/teacher/courses/students
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "courseId": 1,
+      "studentId": 1
+    }
+
+#### DELETE /teacher/courses/students
+- Description: Remove a student from a course.
+- Roles: Teacher
+- Request Body:
+  {
+    "courseId": "number",
+    "studentId": "number"
+  }
+- Example Request (Postman):
+  - Method: DELETE
+  - URL: http://localhost:8989/teacher/courses/students
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "courseId": 1,
+      "studentId": 1
+    }
+
+#### GET /teacher/courses/mine
+- Description: Retrieve the teacher's created or co-taught courses.
+- Roles: Teacher
+- Headers: Authorization: Bearer <accessToken>
+- Query Parameters: None
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/teacher/courses/mine
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "course_id": 1,
+      "title": "Mathematiques de Base",
+      "teacher_id": 2
+    }
+  ]
+
+#### POST /announcements/course
+- Description: Create a new course announcement (real-time update via WebSocket).
+- Roles: Teacher
+- Request Body:
+  {
+    "courseId": "number",
+    "title": "string",
+    "content": "string"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/announcements/course
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "courseId": 1,
+      "title": "Examen Approchant",
+      "content": "Revision du Chapitre 2."
+    }
+- Real-Time: Emits 'newAnnouncement' to WebSocket room 'course_1'.
+
+Admin Routes
+------------
+
+All admin routes require a valid Authorization header with an Admin or SuperAdmin role token.
+
+#### GET /admin/teachers
+- Description: Retrieve a list of all teachers.
+- Roles: Admin, SuperAdmin
+- Headers: Authorization: Bearer <accessToken>
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/admin/teachers
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "user_id": 2,
+      "name": "Tanyi Nkeng",
+      "email": "tanyi.nkeng@ub.ac.cm",
+      "role": "Teacher"
+    }
+  ]
+
+#### POST /announcements/general
+- Description: Create a new general announcement (real-time update via WebSocket).
+- Roles: Admin, SuperAdmin
+- Request Body:
+  {
+    "title": "string",
+    "content": "string"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/announcements/general
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "title": "Fete Nationale",
+      "content": "Cours suspendus le 20 Mai."
+    }
+- Real-Time: Emits 'newAnnouncement' to WebSocket room 'generalAnnouncements'.
+
+Comments Routes
+---------------
+
+All comment routes require a valid Authorization header with any role token.
+
+#### POST /comments
+- Description: Create a new comment on an assignment, general announcement, or course announcement (real-time update via WebSocket).
+- Roles: Student, Teacher, Admin
+- Request Body:
+  {
+    "type": "string", // "assignment", "generalAnnouncement", "courseAnnouncement"
+    "targetId": "number",
+    "content": "string"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/comments
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "type": "courseAnnouncement",
+      "targetId": 1,
+      "content": "Great announcement!"
+    }
+- Real-Time: Emits 'newComment' to appropriate WebSocket room (e.g., 'courseAnnouncement_1').
+
+#### GET /comments
+- Description: Retrieve paginated comments for a specific target.
+- Roles: Student, Teacher, Admin
+- Query Parameters: type=string, targetId=number, page=number, limit=number (default: page=1, limit=10)
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/comments?type=courseAnnouncement&targetId=1&page=1&limit=10
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "comment_id": 1,
+      "content": "Great announcement!",
+      "user": { "name": "Ngono Mbella", "role": "Student" },
+      "created_at": "2025-06-14T10:00:00Z"
+    }
+  ]
+
+Polls Routes
+------------
+
+All poll routes require a valid Authorization header with appropriate role tokens.
+
+#### POST /polls
+- Description: Create a new poll for an announcement (real-time update via WebSocket).
+- Roles: Teacher, Admin
+- Request Body:
+  {
+    "announcementId": "number",
+    "type": "string", // "general" or "course"
+    "allowMultipleAnswers": "boolean"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/polls
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "announcementId": 1,
+      "type": "course",
+      "allowMultipleAnswers": false
+    }
+- Real-Time: Emits 'newPoll' to WebSocket room 'announcement_1'.
+
+#### POST /polls/respond
+- Description: Respond to a poll (real-time update via WebSocket).
+- Roles: Student, Teacher, Admin
+- Request Body:
+  {
+    "pollId": "number",
+    "optionId": "number"
+  }
+- Example Request (Postman):
+  - Method: POST
+  - URL: http://localhost:8989/polls/respond
+  - Headers: Authorization: Bearer <accessToken>
+  - Body (raw JSON):
+    {
+      "pollId": 1,
+      "optionId": 1
+    }
+- Real-Time: Emits 'pollResponse' to WebSocket room 'announcement_1'.
+
+#### GET /polls/:pollId/responses
+- Description: Retrieve poll responses.
+- Roles: Teacher, Admin
+- Headers: Authorization: Bearer <accessToken>
+- Example Request (Postman):
+  - Method: GET
+  - URL: http://localhost:8989/polls/1/responses
+  - Headers: Authorization: Bearer <accessToken>
+- Success Response (200):
+  [
+    {
+      "response_id": 1,
+      "user": { "name": "Ngono Mbella", "role": "Student" },
+      "responded_at": "2025-06-14T10:00:00Z"
+    }
+  ]
+
+Testing with Postman
+--------------------
+
+1. Set Up Environment:
+   - Create a Postman environment with variables:
+     - baseUrl: http://localhost:8989
+     - accessToken: (update after login)
+     - refreshToken: (update after login)
+
+2. Test Authentication:
+   - Start with /auth/login to get tokens.
+   - Copy the accessToken and refreshToken from the response and save them in the environment variables.
+   - Use the accessToken in the Authorization header for protected routes.
+   - Example: Login as Student with {"identifier": "CMSTU001", "password": "password123", "role": "Student"}.
+
+3. Test Protected Routes:
+   - Set the Authorization header to Bearer {{accessToken}}.
+   - Test each role-specific route with the appropriate token (e.g., log in as a Student for /student/details).
+
+4. Handle Token Expiration:
+   - Wait for the access token to expire (15 minutes) or use an expired token.
+   - Expect a 401 response with { "message": "Token expired", "expired": true }.
+   - Use /auth/refresh with the refreshToken to get new tokens.
+
+5. Test Real-Time Features:
+   - Use a WebSocket client (e.g., Postman’s WebSocket support or a tool like Socket.IO Client) to connect to ws://localhost:8989.
+   - Join rooms like 'generalAnnouncements', 'course_1', or 'announcement_1' to receive real-time events (e.g., 'newAnnouncement', 'pollResponse').
+   - Example WebSocket Connection:
+     - URL: ws://localhost:8989
+     - Event: Join room 'course_1' and listen for 'newAnnouncement'.
+
+6. Debugging:
+   - If you get a 403, check the role in the token matches the route's required role.
+   - Ensure the database is seeded with users, courses, and announcements (e.g., via Prisma Studio or seed script).
+
+Notes
+-----
+- Prerequisites: Ensure the server is running (npm run dev) and the PostgreSQL database is set up with the schema.
+- Real-Time Features: Use a WebSocket client for testing real-time updates (e.g., announcements, polls, comments). Postman can test HTTP endpoints only.
+- Pagination: For paginated endpoints (e.g., announcements, comments), add page and limit query parameters (e.g., ?page=1&limit=10).
