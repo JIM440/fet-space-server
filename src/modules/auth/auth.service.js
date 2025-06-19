@@ -35,12 +35,19 @@ class AuthService {
     });
   }
 
+  async deleteRefreshToken(userId) {
+    await prisma.user.update({
+      where: { user_id: userId },
+      data: { refreshToken: null },
+    });
+  }
+
   async getUserByRole(identifier, password, role) {
     let userQuery;
     switch (role.toLowerCase()) {
       case 'student':
         userQuery = prisma.student.findUnique({
-          where: { matricule_number: identifier },
+          where: { matricule_number: identifier.toLowerCase() },
           include: { user: true },
         });
         break;
@@ -49,7 +56,7 @@ class AuthService {
       case 'superadmin':
         userQuery = prisma.user.findUnique({
           where: { email: identifier },
-          include: { Teachers: true, Admins: true },
+          include: { teacher: true, admin: true },
         });
         break;
       default:

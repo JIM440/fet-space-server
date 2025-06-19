@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -32,6 +32,7 @@ model User {
   password      String
   phone_number  String?
   role          Role
+  refreshToken  String?
   student       Student?
   teacher       Teacher?
   admin         Admin?
@@ -70,6 +71,9 @@ model Course {
   course_id         Int                   @id @default(autoincrement())
   title             String
   subtitle          String?
+  code           String
+  description    String?
+  join_code      String              @unique // Ensure uniqueness
   teacher_id        Int
   teacher           Teacher               @relation(fields: [teacher_id], references: [user_id], onDelete: Restrict)
   courseTeachers    Course_Teacher[]
@@ -144,8 +148,8 @@ model Course_Announcement {
   announcement_id Int            @id @default(autoincrement())
   course_id       Int
   teacher_id      Int
-  title           String
-  content         String?
+  title           String?
+  content         String
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   course          Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
@@ -159,8 +163,8 @@ model Course_Announcement {
 model General_Announcement {
   announcement_id Int            @id @default(autoincrement())
   admin_id        Int
-  title           String
-  content         String?
+  title           String?
+  content         String
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   admin           Admin          @relation(fields: [admin_id], references: [user_id], onDelete: Restrict)

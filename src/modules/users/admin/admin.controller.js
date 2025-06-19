@@ -4,6 +4,7 @@ class AdminController {
   async getAllStudents(req, res) {
     const { page = 1, limit = 10 } = req.query;
     const students = await AdminService.getAllStudents(page, limit);
+    console.log(students)
     res.json(students);
   }
 
@@ -17,6 +18,7 @@ class AdminController {
   async getAllTeachers(req, res) {
     const { page = 1, limit = 10 } = req.query;
     const teachers = await AdminService.getAllTeachers(page, limit);
+    console.log(teachers)
     res.json(teachers);
   }
 
@@ -71,6 +73,7 @@ class AdminController {
   async editStudent(req, res) {
     const { studentId } = req.params;
     const studentData = req.body;
+    console.log(studentId)
     const student = await AdminService.editStudent(parseInt(studentId), studentData);
     res.json(student);
   }

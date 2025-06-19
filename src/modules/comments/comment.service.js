@@ -22,15 +22,16 @@ class CommentService {
   async getComments(type, targetId, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     let where = {};
+    const target_id = parseInt(targetId)
     switch (type.toLowerCase()) {
       case 'assignment':
-        where.assignment_id = targetId;
+        where.assignment_id = target_id;
         break;
       case 'generalannouncement':
-        where.general_announcement_id = targetId;
+        where.general_announcement_id = target_id;
         break;
       case 'courseannouncement':
-        where.course_announcement_id = targetId;
+        where.course_announcement_id = target_id;
         break;
       default:
         throw new Error('Invalid comment type');
@@ -39,7 +40,10 @@ class CommentService {
       where,
       include: { user: true },
       skip,
-      take: limit,
+      take: parseInt(limit),
+      orderBy: {
+      created_at: 'desc',
+    },
     });
   }
 

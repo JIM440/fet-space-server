@@ -7,19 +7,31 @@ class CourseAnnouncementService {
 
   async getAnnouncements(courseId, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-    return prisma.course_Announcement.findMany({
+    const announcements = await prisma.course_Announcement.findMany({
       where: { course_id: courseId },
       skip,
       take: limit,
-      include: { Polls: true, Attachments: true, teacher: { include: { user: true } } },
+      include: {
+        polls: true,
+        attachments: true,
+        teacher: { include: { user: true } },
+        _count: { select: { comments: true } }, // Add comment count
+      },
     });
+    return announcements.length > 0 ? announcements : null;
   }
 
   async getAnnouncementDetails(announcementId) {
-    return prisma.course_Announcement.findUnique({
+    const announcement = await prisma.course_Announcement.findFirst({
       where: { announcement_id: announcementId },
-      include: { Polls: true, Attachments: true, teacher: { include: { user: true } } },
+      include: {
+        polls: true,
+        attachments: true,
+        teacher: { include: { user: true } },
+        _count: { select: { comments: true } }, // Add comment count
+      },
     });
+    return announcement;
   }
 
   async updateAnnouncement(announcementId, data) {

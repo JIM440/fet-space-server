@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import authRoutes from './modules/auth/auth.routes.js';
 import studentRoutes from './modules/users/student/student.routes.js';
 import teacherRoutes from './modules/users/teacher/teacher.routes.js';
@@ -12,6 +13,7 @@ import pollRoutes from './modules/polls/poll.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 
 const app = express();
+app.use(cors()); // Enable CORS for all origins
 app.use(express.json());
 
 app.use('/health', healthRoutes);

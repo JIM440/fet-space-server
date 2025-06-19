@@ -12,9 +12,9 @@ class PollController {
     res.json(poll);
   }
 
-  async respondToPoll(req, res) {
+  async toggleVote(req, res) {
     const { pollId, optionId } = req.body;
-    const response = await PollService.respondToPoll(req.user.user_id, pollId, optionId);
+    const response = await PollService.toggleVote(req.user.user_id, parseInt(pollId), optionId);
     SocketService.emitEvent(`announcement_${pollId}`, 'pollResponse', response);
     res.json(response);
   }

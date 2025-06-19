@@ -4,9 +4,12 @@ import { authMiddleware } from '../../../common/middlewares/authMiddleware.js';
 
 const router = Router();
 
+// router.post('/', GeneralAnnouncementController.createAnnouncement);
 router.post('/', authMiddleware(['Admin', 'SuperAdmin']), GeneralAnnouncementController.createAnnouncement);
-router.get('/', authMiddleware(['Student', 'Teacher', 'Admin']), GeneralAnnouncementController.getAnnouncements);
-router.get('/:announcementId', authMiddleware(['Student', 'Teacher', 'Admin']), GeneralAnnouncementController.getAnnouncementDetails);
+router.get('/', GeneralAnnouncementController.getAnnouncements);
+// router.get('/', authMiddleware(['Student', 'Teacher', 'Admin']), GeneralAnnouncementController.getAnnouncements);
+// router.get('/:announcementId', authMiddleware(['Student']), GeneralAnnouncementController.getAnnouncementDetails);
+router.get('/:announcementId', authMiddleware(['Student', 'Teacher', 'Admin', 'SuperAdmin']), GeneralAnnouncementController.getAnnouncementDetails);
 router.put('/:announcementId', authMiddleware(['Admin', 'SuperAdmin']), GeneralAnnouncementController.updateAnnouncement);
 router.delete('/:announcementId', authMiddleware(['Admin', 'SuperAdmin']), GeneralAnnouncementController.deleteAnnouncement);
 

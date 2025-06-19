@@ -5,7 +5,7 @@ import { authMiddleware } from '../../common/middlewares/authMiddleware.js';
 const router = Router();
 
 router.post('/', authMiddleware(['Teacher', 'Admin']), PollController.createPoll);
-router.post('/respond', authMiddleware(['Student', 'Teacher', 'Admin']), PollController.respondToPoll);
+router.post('/toggle-vote', authMiddleware(['Student', 'Teacher', 'Admin']), PollController.toggleVote);
 router.get('/:pollId/responses', authMiddleware(['Teacher', 'Admin']), PollController.getPollResponses);
 
 export default router;

@@ -14,15 +14,16 @@ router.put('/teachers/:teacherId', authMiddleware(['Admin', 'SuperAdmin']), Admi
 
 router.get('/students', authMiddleware(['Admin', 'SuperAdmin']), AdminController.getAllStudents);
 router.get('/students/search', authMiddleware(['Admin', 'SuperAdmin']), AdminController.searchStudents);
-router.post('/students', AdminController.addStudent);
-// router.post('/students', authMiddleware(['Admin', 'SuperAdmin']), AdminController.addStudent);
-router.post('/students/bulk', authMiddleware(['Admin', 'SuperAdmin']), AdminController.addMultipleStudents);
+// router.post('/students', AdminController.addStudent);
+router.post('/students', authMiddleware(['Admin', 'SuperAdmin']), AdminController.addStudent);
+router.post('/students/bulk', AdminController.addMultipleStudents);
+// router.post('/students/bulk', authMiddleware(['Admin', 'SuperAdmin']), AdminController.addMultipleStudents);
+// router.delete('/students/:studentId', AdminController.deleteStudent);
 router.delete('/students/:studentId', authMiddleware(['Admin', 'SuperAdmin']), AdminController.deleteStudent);
 router.put('/students/:studentId', authMiddleware(['Admin', 'SuperAdmin']), AdminController.editStudent);
 
 // SuperAdmin-only routes
-router.get('/admins', authMiddleware(['SuperAdmin']), AdminController.getAllAdmins);
-// router.post('/admins', AdminController.addAdmin);
+router.get('/admins', authMiddleware(['SuperAdmin, Admin']), AdminController.getAllAdmins);
 router.post('/admins', authMiddleware(['SuperAdmin']), AdminController.addAdmin);
 router.delete('/admins/:adminId', authMiddleware(['SuperAdmin']), AdminController.deleteAdmin);
 router.put('/admins/:adminId', authMiddleware(['SuperAdmin']), AdminController.editAdmin);
