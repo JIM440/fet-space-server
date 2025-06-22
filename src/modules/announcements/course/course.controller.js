@@ -4,14 +4,14 @@ import SocketService from '../../../common/utils/socket.service.js';
 class CourseAnnouncementController {
   async createAnnouncement(req, res) {
     const { courseId } = req.body;
-    const announcement = await CourseAnnouncementService.createAnnouncement(req.user.user_id, courseId, req.body);
+    const announcement = await CourseAnnouncementService.createAnnouncement(req.user.user_id, parseInt(courseId), req.body);
     SocketService.emitEvent(`course_${courseId}`, 'newAnnouncement', announcement);
     res.json(announcement);
   }
 
   async getAnnouncements(req, res) {
     const { courseId, page = 1, limit = 10 } = req.query;
-    const announcements = await CourseAnnouncementService.getAnnouncements(courseId, page, limit);
+    const announcements = await CourseAnnouncementService.getAnnouncements(parseInt(courseId), page, parseInt(limit));
     res.json(announcements);
   }
 
@@ -22,14 +22,18 @@ class CourseAnnouncementController {
 
   async updateAnnouncement(req, res) {
     const announcement = await CourseAnnouncementService.updateAnnouncement(req.params.announcementId, req.body);
-    SocketService.emitEvent(`course_${announcement.course_id}`, 'updateAnnouncement', announcement);
-    res.json(announcement);
+    // Fetch the updated announcement with relations for the event
+    const fullAnnouncement = await CourseAnnouncementService.getAnnouncementDetails(req.params.announcementId);
+    SocketService.emitEvent(`course_${fullAnnouncement.course_id}`, 'updateAnnouncement', fullAnnouncement);
+    res.json(fullAnnouncement);
   }
 
   async deleteAnnouncement(req, res) {
     const announcement = await CourseAnnouncementService.getAnnouncementDetails(req.params.announcementId);
     await CourseAnnouncementService.deleteAnnouncement(req.params.announcementId);
-    SocketService.emitEvent(`course_${announcement.course_id}`, 'deleteAnnouncement', { announcementId: req.params.announcementId });
+    SocketService.emitEvent(`course_${announcement.course_id}`, 'deleteAnnouncement', {
+      announcementId: req.params.announcementId,
+    });
     res.json({ message: 'Announcement deleted' });
   }
 }

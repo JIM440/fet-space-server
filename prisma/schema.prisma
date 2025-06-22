@@ -39,6 +39,7 @@ model User {
   comments      Comment[]
   notifications Notification[]
   pollResponses Poll_Response[]
+  created_at    DateTime        @default(now()) // Added
 }
 
 model Teacher {
@@ -48,6 +49,7 @@ model Teacher {
   assignments         Assignment[]
   courseAnnouncements Course_Announcement[]
   courseTeachers      Course_Teacher[]
+  created_at          DateTime              @default(now()) // Added
 }
 
 model Student {
@@ -59,21 +61,23 @@ model Student {
   institutional_email String                  @unique
   courseStudents      Course_Student[]
   submissions         Assignment_Submission[]
+  created_at          DateTime                @default(now()) // Added
 }
 
 model Admin {
   user_id              Int                    @id
   user                 User                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   generalAnnouncements General_Announcement[]
+  created_at           DateTime               @default(now()) // Added
 }
 
 model Course {
   course_id         Int                   @id @default(autoincrement())
   title             String
   subtitle          String?
-  code           String
-  description    String?
-  join_code      String              @unique // Ensure uniqueness
+  code              String
+  description       String?
+  join_code         String                @unique // Ensure uniqueness
   teacher_id        Int
   teacher           Teacher               @relation(fields: [teacher_id], references: [user_id], onDelete: Restrict)
   courseTeachers    Course_Teacher[]
@@ -82,6 +86,7 @@ model Course {
   courseContents    Course_Content[]
   revisionQuestions Revision_Question[]
   announcements     Course_Announcement[]
+  created_at        DateTime              @default(now()) // Added
 }
 
 model Course_Teacher {
@@ -89,6 +94,7 @@ model Course_Teacher {
   teacher_id Int
   course     Course  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   teacher    Teacher @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
+  created_at DateTime @default(now()) // Added
 
   @@id([course_id, teacher_id])
 }
@@ -98,6 +104,7 @@ model Course_Student {
   student_id Int
   course     Course  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   student    Student @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+  created_at DateTime @default(now()) // Added
 
   @@id([course_id, student_id])
 }
@@ -115,6 +122,7 @@ model Assignment {
   comments      Comment[]
   attachments   Attachment[]
   notifications Notification[]
+  created_at    DateTime                @default(now()) // Added
 }
 
 model Assignment_Submission {
@@ -125,15 +133,16 @@ model Assignment_Submission {
   assignment    Assignment   @relation(fields: [assignment_id], references: [assignment_id], onDelete: Cascade)
   student       Student      @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
   attachments   Attachment[]
+  created_at    DateTime     @default(now()) // Added
 }
 
 model Course_Content {
   content_id    Int            @id @default(autoincrement())
   course_id     Int
-  title         String
   course        Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   attachments   Attachment[]
   notifications Notification[]
+  created_at    DateTime       @default(now()) // Added
 }
 
 model Revision_Question {
@@ -142,6 +151,7 @@ model Revision_Question {
   file_url    String?
   course      Course       @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   attachments Attachment[]
+  created_at  DateTime     @default(now()) // Added
 }
 
 model Course_Announcement {
@@ -149,7 +159,7 @@ model Course_Announcement {
   course_id       Int
   teacher_id      Int
   title           String?
-  content         String
+  content         String @db.Text
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   course          Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
@@ -164,7 +174,7 @@ model General_Announcement {
   announcement_id Int            @id @default(autoincrement())
   admin_id        Int
   title           String?
-  content         String
+  content         String @db.Text
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   admin           Admin          @relation(fields: [admin_id], references: [user_id], onDelete: Restrict)
@@ -184,6 +194,7 @@ model Poll {
   course_announcement     Course_Announcement?  @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
   options                 Poll_Option[]
   responses               Poll_Response[]
+  created_at              DateTime              @default(now()) // Added
 }
 
 model Poll_Option {
@@ -192,6 +203,7 @@ model Poll_Option {
   content   String
   poll      Poll            @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
   responses Poll_Response[]
+  created_at DateTime       @default(now()) // Added
 }
 
 model Poll_Response {
@@ -203,6 +215,7 @@ model Poll_Response {
   poll           Poll        @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
   option         Poll_Option @relation(fields: [poll_option_id], references: [option_id], onDelete: Cascade)
   user           User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  created_at     DateTime    @default(now()) // Added
 }
 
 model Comment {
@@ -235,6 +248,7 @@ model Attachment {
   general_announcement     General_Announcement?  @relation(fields: [general_announcement_id], references: [announcement_id], onDelete: Cascade)
   course_announcement      Course_Announcement?   @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
   revision_question        Revision_Question?     @relation(fields: [revision_questions_id], references: [question_id], onDelete: Cascade)
+  created_at               DateTime               @default(now()) // Added
 }
 
 model Notification {

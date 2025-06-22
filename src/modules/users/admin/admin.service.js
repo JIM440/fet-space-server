@@ -448,7 +448,7 @@ async editStudent(studentId, studentData) {
     const skip = (page - 1) * limit;
     return prisma.admin.findMany({
       skip,
-      take: limit,
+      take: parseInt(limit),
       include: { user: true },
     });
   }

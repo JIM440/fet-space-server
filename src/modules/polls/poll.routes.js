@@ -6,6 +6,6 @@ const router = Router();
 
 router.post('/', authMiddleware(['Teacher', 'Admin']), PollController.createPoll);
 router.post('/toggle-vote', authMiddleware(['Student', 'Teacher', 'Admin']), PollController.toggleVote);
-router.get('/:pollId/responses', authMiddleware(['Teacher', 'Admin']), PollController.getPollResponses);
+router.get('/:pollId/responses', authMiddleware(['Student', 'Teacher', 'Admin']), PollController.getPollResponses);
 
 export default router;

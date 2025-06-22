@@ -30,28 +30,54 @@ async getUpcomingDeadlines(userId) {
     });
   }
 
-  async getEnrolledCourses(userId) {
-    return prisma.course_Student.findMany({
-      where: { student_id: userId },
-      include: { course: { include: { teacher: true } } },
+  async getEnrolledCourses(studentId) {
+      const studentCourses= await prisma.course_Student.findMany({
+      where: { student_id: studentId },
+      include: {
+        course: {
+          include: {
+            teacher: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                    phone_number: true,
+                  },
+                },
+              },
+            },
+            courseTeachers: {
+              include: {
+                teacher: {
+                  include: {
+                    user: {
+                      select: {
+                        name: true,
+                        email: true,
+                        phone_number: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
+    return studentCourses
   }
 
-  async getCourseDetails(courseId) {
-    return prisma.course.findUnique({
-      where: { course_id: courseId },
-      include: { courseStudents: true },
-    });
-  }
-
-  async joinCourse(studentId, { courseId, joinCode }) {
+  async joinCourse(studentId, { courseId, join_code }) {
     // Validate join code
-    const course = await prisma.course.findUnique({ where: { join_code: joinCode } });
+    console.log(join_code)
+    const course = await prisma.course.findUnique({ where: { join_code } });
     if (!course) {
       throw new Error('Invalid join code');
     }
 
-    const result = await prisma.course_student.create({ data: { student_id: studentId, course_id: course.course_id } });
+    const result = await prisma.course_Student.create({ data: { student_id: studentId, course_id: course.course_id } });
 
     return result;
   }

@@ -40,8 +40,8 @@ class StudentController {
 
   async joinCourse(req, res) {
     try {
-      const { joinCode } = req.body;
-      const course = await StudentService.joinCourse(req.user.user_id, { joinCode });
+      const { join_code } = req.body;
+      const course = await StudentService.joinCourse(req.user.user_id, { join_code });
       res.json(course);
     } catch (error) {
       res.status(400).json({ error: error.message });

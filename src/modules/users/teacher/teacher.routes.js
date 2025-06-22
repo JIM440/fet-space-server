@@ -4,11 +4,14 @@ import { authMiddleware } from '../../../common/middlewares/authMiddleware.js';
 
 const router = Router();
 
-router.post('/courses', authMiddleware(['Teacher']), TeacherController.addCourse);
-router.post('/courses/students', authMiddleware(['Teacher']), TeacherController.addStudentToCourse);
+router.get('/create/:courseId/search/students', TeacherController.searchStudent);
+router.get('/create/:courseId/search/teachers', TeacherController.searchTeacher);
+router.post('/create/:courseId/add/student', TeacherController.addStudentToCourse); // Updated route
+router.post('/create/:courseId/add/teacher', TeacherController.addTeacherToCourse); // New route
 router.delete('/courses/students', authMiddleware(['Teacher']), TeacherController.removeStudentFromCourse);
-router.get('/search/students', authMiddleware(['Teacher']), TeacherController.searchStudent);
-router.get('/search/teachers', authMiddleware(['Teacher']), TeacherController.searchTeacher);
 router.get('/courses/mine', authMiddleware(['Teacher']), TeacherController.getMyCourses);
+router.get('/courses/:courseId', authMiddleware(['Teacher']), TeacherController.getCourseDetails);
+router.post('/courses/:courseId/content', authMiddleware(['Teacher']), TeacherController.addCourseContent);
+router.post('/courses/:courseId/revision-questions', authMiddleware(['Teacher']), TeacherController.addRevisionQuestions);
 
 export default router;

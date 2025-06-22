@@ -1,44 +1,141 @@
 import prisma from '../../common/database/prismaClient.js';
+import { nanoid } from 'nanoid'; // Assuming nanoid is imported
 
 class CourseService {
-async createCourse(teacherId, data) {
-    const { title, code, description } = data;
-    let joinCode = this.generateUniqueJoinCode();
-
-    // Ensure joinCode is unique
-    let isUnique = false;
-    while (!isUnique) {
-      const existingCourse = await prisma.course.findUnique({ where: { join_code: joinCode } });
-      if (!existingCourse) isUnique = true;
-      else joinCode = this.generateUniqueJoinCode();
-    }
-
-    const course = await prisma.course.create({
-      data: {
-        title,
-        code,
-        description,
-        teacher_id: teacherId,
-        join_code: joinCode,
+  async getCourseDetails(courseId) {
+    const course = await prisma.course.findUnique({
+      where: { course_id: parseInt(courseId) },
+      include: {
+        teacher: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone_number: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { courseStudents: true }, // Count of students enrolled
+        },
       },
     });
 
-    return course;
+    if (!course) {
+      return null;
+    }
+
+    // Add students count as a top-level field
+    return {
+      ...course,
+      studentsCount: course._count.courseStudents,
+    };
   }
 
-
-  async getCourseDetails(courseId) {
-    return prisma.course.findUnique({
-      where: { course_id: courseId },
-      include: { Course_Student: { include: { Students: { include: { user: true } } } }, Teachers: { include: { user: true } } },
+  async getCoursePersons(courseId) {
+    const course = await prisma.course.findUnique({
+      where: { course_id: parseInt(courseId) },
+      include: {
+        courseStudents: {
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                    phone_number: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        teacher: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone_number: true,
+              },
+            },
+          },
+        },
+        courseTeachers: {
+          include: {
+            teacher: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                    phone_number: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    if (!course) {
+      return null;
+    }
+
+    // Transform the response for cleaner data
+    return {
+      students: course.courseStudents.map(cs => ({
+        id: cs.student_id,
+        name: cs.student.user.name,
+        email: cs.student.user.email,
+        phone_number: cs.student.user.phone_number,
+        role: 'Student',
+      })),
+      teachers: [
+        {
+          id: course.teacher.user_id,
+          name: course.teacher.user.name,
+          email: course.teacher.user.email,
+          phone_number: course.teacher.user.phone_number,
+          role: 'Teacher',
+        },
+        ...course.courseTeachers.map(ct => ({
+          id: ct.teacher.user_id,
+          name: ct.teacher.user.name,
+          email: ct.teacher.user.email,
+          phone_number: ct.teacher.user.phone_number,
+          role: 'Teacher',
+        })),
+      ],
+    };
   }
 
-  async getStudentCourses(studentId) {
-    return prisma.course_Student.findMany({
-      where: { student_id: studentId },
-      include: { Courses: { include: { Teachers: { include: { user: true } } } } },
+  async getCourseContents(courseId) {
+    const contents = await prisma.course_Content.findMany({
+      where: { course_id: parseInt(courseId) },
     });
+
+    return contents.length > 0 ? contents : null;
+  }
+
+  async getCourseAssignments(courseId) {
+    const assignments = await prisma.assignment.findMany({
+      where: { course_id: parseInt(courseId) },
+    });
+
+    return assignments.length > 0 ? assignments : null;
+  }
+
+  async getCourseRevisionQuestions(courseId) {
+    const revisionQuestions = await prisma.revision_Question.findMany({
+      where: { course_id: parseInt(courseId) },
+    });
+
+    return revisionQuestions.length > 0 ? revisionQuestions : null;
   }
 
   async addTeacherToCourse(courseId, teacherId) {
@@ -51,6 +148,22 @@ async createCourse(teacherId, data) {
 
   async removeStudentFromCourse(courseId, studentId) {
     return prisma.course_Student.delete({ where: { course_id: courseId, student_id: studentId } });
+  }
+
+  async getCourseContents(courseId) {
+    const contents = await prisma.course_Content.findMany({
+      where: { course_id: parseInt(courseId) },
+      // include: { teacher: { include: { user: true } } },
+    });
+    return contents.length > 0 ? contents : null;
+  }
+
+  async getCourseRevisionQuestions(courseId) {
+    const revisionQuestions = await prisma.revision_Question.findMany({
+      where: { course_id: parseInt(courseId) },
+      // include: { teacher: { include: { user: true } } },
+    });
+    return revisionQuestions.length > 0 ? revisionQuestions : null;
   }
 
   generateUniqueJoinCode() {

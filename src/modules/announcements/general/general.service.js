@@ -1,14 +1,7 @@
 import prisma from "../../../common/database/prismaClient.js";
 
 class GeneralAnnouncementService {
-  // async createAnnouncement(adminId, data) {
-  //   console.log(data)
-  //   return prisma.general_Announcement.create({
-  //     data: { ...data, admin_id: adminId },
-  //   });
-  // }
-
-async createAnnouncement(adminId, data) {
+  async createAnnouncement(adminId, data) {
     console.log(data);
     return prisma.$transaction(async (tx) => {
       // Create the general announcement
@@ -39,7 +32,27 @@ async createAnnouncement(adminId, data) {
         return { ...announcement, poll };
       }
 
-      return announcement;
+      // Handle attachments for regular announcements
+      if (!data.is_poll && data.attachments && Array.isArray(data.attachments)) {
+        await tx.attachment.createMany({
+          data: data.attachments.map((url) => ({
+            url,
+            file_type: this.determineFileType(url), // Determine file type from URL
+            general_announcement_id: announcement.announcement_id,
+          })),
+        });
+      }
+
+      const fullAnnouncement = await tx.general_Announcement.findUnique({
+        where: { announcement_id: announcement.announcement_id },
+        include: {
+          poll: true,
+          attachments: true,
+          admin: { include: { user: true } },
+        },
+      });
+
+      return fullAnnouncement;
     });
   }
 
@@ -72,8 +85,8 @@ async createAnnouncement(adminId, data) {
       include: {
         poll: {
           include: {
-            options: true, // Include poll options
-            responses: true, // Optionally include responses
+            options: true,
+            responses: true,
           },
         },
         attachments: true,
@@ -95,6 +108,14 @@ async createAnnouncement(adminId, data) {
     return prisma.general_Announcement.delete({
       where: { announcement_id: parseInt(announcementId) },
     });
+  }
+
+  // Helper method to determine file type from URL
+  determineFileType(url) {
+    if (url.endsWith('.pdf')) return 'pdf';
+    if (url.endsWith('.doc') || url.endsWith('.docx')) return 'doc';
+    if (url.match(/\.(jpeg|jpg|png|gif)$/i)) return 'img';
+    return 'pdf'; // Default to pdf if type can't be determined
   }
 }
 

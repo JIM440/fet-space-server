@@ -4,7 +4,7 @@ import prisma from "../../../common/database/prismaClient.js";
 
 class GeneralAnnouncementController {
   async createAnnouncement(req, res) {
-    console.log(req.body)
+    console.log(req.body);
     const announcement = await GeneralAnnouncementService.createAnnouncement(req.user.user_id, req.body);
 
     const fullAnnouncement = await prisma.general_Announcement.findUnique({
