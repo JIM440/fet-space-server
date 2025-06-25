@@ -114,28 +114,14 @@ class CourseService {
     };
   }
 
-  async getCourseContents(courseId) {
-    const contents = await prisma.course_Content.findMany({
-      where: { course_id: parseInt(courseId) },
-    });
-
-    return contents.length > 0 ? contents : null;
-  }
-
   async getCourseAssignments(courseId) {
     const assignments = await prisma.assignment.findMany({
       where: { course_id: parseInt(courseId) },
     });
 
+    console.log(assignments)
+
     return assignments.length > 0 ? assignments : null;
-  }
-
-  async getCourseRevisionQuestions(courseId) {
-    const revisionQuestions = await prisma.revision_Question.findMany({
-      where: { course_id: parseInt(courseId) },
-    });
-
-    return revisionQuestions.length > 0 ? revisionQuestions : null;
   }
 
   async addTeacherToCourse(courseId, teacherId) {
@@ -150,20 +136,44 @@ class CourseService {
     return prisma.course_Student.delete({ where: { course_id: courseId, student_id: studentId } });
   }
 
-  async getCourseContents(courseId) {
+async getCourseContents(courseId) {
     const contents = await prisma.course_Content.findMany({
       where: { course_id: parseInt(courseId) },
-      // include: { teacher: { include: { user: true } } },
+      include: {
+        course: {
+          include: {
+            teacher: {
+              include: { user: true },
+            },
+          },
+        },
+        attachments: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
     });
-    return contents.length > 0 ? contents : null;
+    return contents;
   }
 
   async getCourseRevisionQuestions(courseId) {
     const revisionQuestions = await prisma.revision_Question.findMany({
       where: { course_id: parseInt(courseId) },
-      // include: { teacher: { include: { user: true } } },
+      include: {
+        course: {
+          include: {
+            teacher: {
+              include: { user: true },
+            },
+          },
+        },
+        attachments: true, // Fetch url and file_type from Attachment, including images
+      },
+      orderBy: {
+        created_at: 'desc', // Sort by created_at in descending order (most recent first)
+      },
     });
-    return revisionQuestions.length > 0 ? revisionQuestions : null;
+    return revisionQuestions;
   }
 
   generateUniqueJoinCode() {

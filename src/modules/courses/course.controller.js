@@ -21,7 +21,7 @@ class CourseController {
     res.json(contents);
   }
 
-  async getCourseAssignments(req, res) {
+async getCourseAssignments(req, res) {
     const assignments = await CourseService.getCourseAssignments(req.params.courseId);
     res.json(assignments);
   }

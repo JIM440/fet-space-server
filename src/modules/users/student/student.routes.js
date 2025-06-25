@@ -36,4 +36,22 @@ router.post(
   StudentController.joinCourse
 );
 
+router.post(
+  "/assignments/:assignmentId/submit",
+  authMiddleware(["Student"]),
+  StudentController.submitAssignment
+);
+
+router.get(
+  "/assignments/:assignmentId/details",
+  authMiddleware(["Student"]),
+  StudentController.getAssignmentDetailsForStudent
+);
+
+router.get(
+  "/deadlines/upcoming",
+  authMiddleware(["Student"]),
+  StudentController.getUpcomingDeadlines
+);
+
 export default router;

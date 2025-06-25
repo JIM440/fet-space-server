@@ -47,6 +47,33 @@ class StudentController {
       res.status(400).json({ error: error.message });
     }
   }
+
+  async submitAssignment(req, res) {
+    try {
+      const { assignmentId, attachments } = req.body;
+      const result = await StudentService.submitAssignment(req.user.user_id, parseInt(assignmentId), { attachments });
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getAssignmentDetailsForStudent(req, res) {
+    const assignment = await StudentService.getAssignmentDetailsForStudent(req.params.assignmentId, req.user.user_id);
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+    res.json(assignment);
+  }
+
+  async getUpcomingDeadlines(req, res) {
+    try {
+      const deadlines = await StudentService.getUpcomingDeadlinesForStudent(req.user.user_id);
+      res.json(deadlines);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 }
 
 export default new StudentController();

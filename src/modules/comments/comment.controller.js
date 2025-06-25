@@ -2,7 +2,7 @@ import CommentService from "./comment.service.js";
 
 class CommentController {
   async createComment(req, res) {
-    const { type, targetId, content } = req.body;
+    const { type, targetId, content } = req.body; 
     const comment = await CommentService.createComment(
       req.user.user_id,
       type,

@@ -30,13 +30,11 @@ class TeacherController {
   }
 
   async searchStudent(req, res) {
-    console.log('Search Student Query:', req.query.q, 'Course ID:', req.params.courseId); // Debug log
     const students = await TeacherService.searchStudent(req.query.q, parseInt(req.params.courseId));
     res.json(students);
   }
 
   async searchTeacher(req, res) {
-    console.log('Search Teacher Query:', req.query.q, 'Course ID:', req.params.courseId); // Debug log
     const teachers = await TeacherService.searchTeacher(req.query.q, parseInt(req.params.courseId));
     res.json(teachers);
   }
@@ -67,6 +65,78 @@ class TeacherController {
       const { url, file_type } = req.body;
       const result = await TeacherService.addRevisionQuestions(req.user.user_id, req.params.courseId, { url, file_type });
       res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async deleteCourseContent(req, res) {
+    try {
+      const result = await TeacherService.deleteCourseContent(req.user.user_id, parseInt(req.params.contentId));
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async deleteRevisionQuestions(req, res) {
+    try {
+      const result = await TeacherService.deleteRevisionQuestions(req.user.user_id, parseInt(req.params.questionId));
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async createAssignment(req, res) {
+    try {
+      const { courseId, title, description, due_date, attachments } = req.body;
+      const result = await TeacherService.createAssignment(req.user.user_id, parseInt(courseId), { title, description, due_date, attachments });
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async updateAssignment(req, res) {
+    try {
+      const { assignmentId, title, description, due_date, attachments } = req.body;
+      console.log(attachments)
+      const result = await TeacherService.updateAssignment(req.user.user_id, parseInt(assignmentId), {
+  title,
+  description,
+  due_date: new Date(due_date),
+  attachments
+}
+);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+async deleteAssignment(req, res) {
+    try {
+      const result = await TeacherService.deleteAssignment(parseInt(req.user.user_id), parseInt(req.params.assignmentId));
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getAssignmentDetailsForTeacher(req, res) {
+    const assignment = await TeacherService.getAssignmentDetailsForTeacher(req.params.assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+    res.json(assignment);
+  }
+
+  async getUpcomingDeadlines(req, res) {
+    try {
+      const deadlines = await TeacherService.getUpcomingDeadlinesForTeacher(req.user.user_id);
+      console.log('deadlines:', deadlines)
+      res.json(deadlines);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
