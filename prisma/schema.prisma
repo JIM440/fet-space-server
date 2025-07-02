@@ -34,14 +34,14 @@ model User {
   password      String
   phone_number  String?
   role          Role
-  refreshToken  String?
+  refreshToken  String?         @db.Text
   student       Student?
   teacher       Teacher?
   admin         Admin?
   comments      Comment[]
   notifications Notification[]
   pollResponses Poll_Response[]
-  created_at    DateTime        @default(now()) // Added
+  created_at    DateTime        @default(now())
 }
 
 model Teacher {
@@ -51,7 +51,7 @@ model Teacher {
   assignments         Assignment[]
   courseAnnouncements Course_Announcement[]
   courseTeachers      Course_Teacher[]
-  created_at          DateTime              @default(now()) // Added
+  created_at          DateTime              @default(now())
 }
 
 model Student {
@@ -63,7 +63,7 @@ model Student {
   institutional_email String                  @unique
   courseStudents      Course_Student[]
   submissions         Assignment_Submission[]
-  created_at          DateTime                @default(now()) // Added
+  created_at          DateTime                @default(now())
 }
 
 model Admin {
@@ -71,16 +71,16 @@ model Admin {
   user                 User                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   generalAnnouncements General_Announcement[]
   created_at           DateTime               @default(now())
-    is_super_admin       Boolean                @default(false)
-  }
+  is_super_admin       Boolean                @default(false)
+}
 
 model Course {
   course_id         Int                   @id @default(autoincrement())
   title             String
   subtitle          String?
   code              String
-  description       String @db.Text
-  join_code         String                @unique // Ensure uniqueness
+  description       String                @db.Text
+  join_code         String                @unique
   teacher_id        Int
   teacher           Teacher               @relation(fields: [teacher_id], references: [user_id], onDelete: Restrict)
   courseTeachers    Course_Teacher[]
@@ -89,26 +89,24 @@ model Course {
   courseContents    Course_Content[]
   revisionQuestions Revision_Question[]
   announcements     Course_Announcement[]
-  created_at        DateTime              @default(now()) // Added
+  created_at        DateTime              @default(now())
 }
 
 model Course_Teacher {
   course_id  Int
   teacher_id Int
-  course     Course  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
-  teacher    Teacher @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
-  created_at DateTime @default(now()) // Added
-
+  course     Course    @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  teacher    Teacher   @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
+  created_at DateTime  @default(now())
   @@id([course_id, teacher_id])
 }
 
 model Course_Student {
   course_id  Int
   student_id Int
-  course     Course  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
-  student    Student @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
-  created_at DateTime @default(now()) // Added
-
+  course     Course    @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  student    Student   @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+  created_at DateTime  @default(now())
   @@id([course_id, student_id])
 }
 
@@ -116,7 +114,7 @@ model Assignment {
   assignment_id Int                     @id @default(autoincrement())
   course_id     Int
   title         String
-  description   String @db.Text
+  description   String                  @db.Text
   teacher_id    Int
   due_date      DateTime?
   course        Course                  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
@@ -125,19 +123,19 @@ model Assignment {
   comments      Comment[]
   attachments   Attachment[]
   notifications Notification[]
-  created_at    DateTime                @default(now()) // Added
+  created_at    DateTime                @default(now())
 }
 
 model Assignment_Submission {
-  submission_id          Int          @id @default(autoincrement())
+  submission_id          Int                   @id @default(autoincrement())
   assignment_id          Int
   student_id             Int
-  submitted_at           DateTime     @default(now()) @updatedAt // Updatable timestamp
-  comment                String?      // Optional comment
-  assignment             Assignment   @relation(fields: [assignment_id], references: [assignment_id], onDelete: Cascade)
-  student                Student      @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+  submitted_at           DateTime              @default(now()) @updatedAt
+  comment                String?
+  assignment             Assignment            @relation(fields: [assignment_id], references: [assignment_id], onDelete: Cascade)
+  student                Student               @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
   attachments            Attachment[]
-  created_at             DateTime     @default(now())
+  created_at             DateTime              @default(now())
 }
 
 model Course_Content {
@@ -146,16 +144,17 @@ model Course_Content {
   course        Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   attachments   Attachment[]
   notifications Notification[]
-  created_at    DateTime       @default(now()) // Added
+  created_at    DateTime       @default(now())
 }
 
 model Revision_Question {
-  question_id Int          @id @default(autoincrement())
-  course_id   Int
-  file_url    String?
-  course      Course       @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
-  attachments Attachment[]
-  created_at  DateTime     @default(now()) // Added
+  question_id   Int            @id @default(autoincrement())
+  course_id     Int
+  file_url      String?
+  course        Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  attachments   Attachment[]
+  notifications Notification[] // Added relation
+  created_at    DateTime       @default(now())
 }
 
 model Course_Announcement {
@@ -163,7 +162,7 @@ model Course_Announcement {
   course_id       Int
   teacher_id      Int
   title           String?
-  content         String @db.Text?
+  content         String?        @db.Text
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   course          Course         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
@@ -178,7 +177,7 @@ model General_Announcement {
   announcement_id Int            @id @default(autoincrement())
   admin_id        Int
   title           String?
-  content         String @db.Text
+  content         String         @db.Text
   is_poll         Boolean        @default(false)
   created_at      DateTime       @default(now())
   admin           Admin          @relation(fields: [admin_id], references: [user_id], onDelete: Restrict)
@@ -198,16 +197,16 @@ model Poll {
   course_announcement     Course_Announcement?  @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
   options                 Poll_Option[]
   responses               Poll_Response[]
-  created_at              DateTime              @default(now()) // Added
+  created_at              DateTime              @default(now())
 }
 
 model Poll_Option {
-  option_id Int             @id @default(autoincrement())
-  poll_id   Int
-  content   String
-  poll      Poll            @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
-  responses Poll_Response[]
-  created_at DateTime       @default(now()) // Added
+  option_id  Int             @id @default(autoincrement())
+  poll_id    Int
+  content    String
+  poll       Poll            @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
+  responses  Poll_Response[]
+  created_at DateTime        @default(now())
 }
 
 model Poll_Response {
@@ -219,7 +218,7 @@ model Poll_Response {
   poll           Poll        @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
   option         Poll_Option @relation(fields: [poll_option_id], references: [option_id], onDelete: Cascade)
   user           User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  created_at     DateTime    @default(now()) // Added
+  created_at     DateTime    @default(now())
 }
 
 model Comment {
@@ -252,23 +251,24 @@ model Attachment {
   general_announcement     General_Announcement?  @relation(fields: [general_announcement_id], references: [announcement_id], onDelete: Cascade)
   course_announcement      Course_Announcement?   @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
   revision_question        Revision_Question?     @relation(fields: [revision_questions_id], references: [question_id], onDelete: Cascade)
-  created_at               DateTime               @default(now()) // Added
+  created_at               DateTime               @default(now())
 }
 
 model Notification {
-  notification_id         Int      @id @default(autoincrement())
+  notification_id         Int                   @id @default(autoincrement())
   user_id                 Int
-  is_read                 Boolean  @default(false)
+  is_read                 Boolean               @default(false)
   message                 String
   assignment_id           Int?
   course_content_id       Int?
   course_announcement_id  Int?
   general_announcement_id Int?
-  created_at              DateTime @default(now())
-
-  user                 User                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  assignment           Assignment?           @relation(fields: [assignment_id], references: [assignment_id], onDelete: Cascade)
-  course_content       Course_Content?       @relation(fields: [course_content_id], references: [content_id], onDelete: Cascade)
-  course_announcement  Course_Announcement?  @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
-  general_announcement General_Announcement? @relation(fields: [general_announcement_id], references: [announcement_id], onDelete: Cascade)
+  revision_questions_id   Int?                  // Added
+  created_at              DateTime              @default(now())
+  user                    User                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  assignment              Assignment?           @relation(fields: [assignment_id], references: [assignment_id], onDelete: Cascade)
+  course_content          Course_Content?       @relation(fields: [course_content_id], references: [content_id], onDelete: Cascade)
+  course_announcement     Course_Announcement?  @relation(fields: [course_announcement_id], references: [announcement_id], onDelete: Cascade)
+  general_announcement    General_Announcement? @relation(fields: [general_announcement_id], references: [announcement_id], onDelete: Cascade)
+  revision_question       Revision_Question?    @relation(fields: [revision_questions_id], references: [question_id], onDelete: Cascade) // Added
 }

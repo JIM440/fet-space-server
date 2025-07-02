@@ -129,6 +129,7 @@ async getUpcomingDeadlines(userId) {
   async submitAssignment(studentId, assignmentId, data) {
     const { attachments, comment } = data;
     const assignment = await prisma.assignment.findUnique({
+      
       where: { assignment_id: parseInt(assignmentId) },
     });
     if (!assignment) {

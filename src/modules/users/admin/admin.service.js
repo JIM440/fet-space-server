@@ -16,26 +16,26 @@ class AdminService {
     });
   }
 
-async searchStudents(query) {
-  const lowerCaseQuery = query.toLowerCase();
-  return prisma.student.findMany({
-    where: {
-      OR: [
-        { user: { name: { contains: lowerCaseQuery } } }, // Search by name (case-insensitive via toLowerCase)
-        { matricule_number: { contains: lowerCaseQuery } }, // Search by matricule (case-insensitive via toLowerCase)
-      ],
-    },
-    include: { user: true },
-  });
-}
+  async searchStudents(query) {
+    const lowerCaseQuery = query.toLowerCase();
+    return prisma.student.findMany({
+      where: {
+        OR: [
+          { user: { name: { contains: lowerCaseQuery } } },
+          { matricule_number: { contains: lowerCaseQuery } },
+        ],
+      },
+      include: { user: true },
+    });
+  }
 
-async searchTeacher(query) {
-  const lowerCaseQuery = query.toLowerCase();
-  return prisma.teacher.findMany({
-    where: { user: { name: { contains: lowerCaseQuery } } },
-    include: { user: true },
-  });
-}
+  async searchTeacher(query) {
+    const lowerCaseQuery = query.toLowerCase();
+    return prisma.teacher.findMany({
+      where: { user: { name: { contains: lowerCaseQuery } } },
+      include: { user: true },
+    });
+  }
 
   async getAllTeachers(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
@@ -56,8 +56,8 @@ async searchTeacher(query) {
         throw new Error("Email already exists");
       }
 
-      // Hash the password
-      const hashedPassword = await this.#hashPassword(studentData.password);
+      // Hash the provided password
+      const hashedPassword = await this.#hashPassword(studentData.matricule_number);
 
       const user = await tx.user.create({
         data: {
@@ -94,8 +94,13 @@ async searchTeacher(query) {
             throw new Error(`Email ${student.email} already exists`);
           }
 
-          // Hash the password
-          const hashedPassword = await this.#hashPassword(student.password);
+          // Check if matricule_number is provided
+          if (!student.matricule_number) {
+            throw new Error(`Matricule number is required for ${student.email}`);
+          }
+
+          // Use matricule_number as default password
+          const hashedPassword = await this.#hashPassword(student.matricule_number);
 
           const user = await tx.user.create({
             data: {
@@ -133,8 +138,8 @@ async searchTeacher(query) {
         throw new Error("Email already exists");
       }
 
-      // Hash the password
-      const hashedPassword = await this.#hashPassword(teacherData.password);
+      // Hash the provided password
+      const hashedPassword = await this.#hashPassword("Teacher@2025");
 
       const user = await tx.user.create({
         data: {
@@ -167,8 +172,8 @@ async searchTeacher(query) {
             throw new Error(`Email ${teacher.email} already exists`);
           }
 
-          // Hash the password
-          const hashedPassword = await this.#hashPassword(teacher.password);
+          // Use default teacher password
+      const hashedPassword = await this.#hashPassword("Teacher@2025");
 
           const user = await tx.user.create({
             data: {
@@ -202,8 +207,8 @@ async searchTeacher(query) {
         throw new Error("Email already exists");
       }
 
-      // Hash the password
-      const hashedPassword = await this.#hashPassword(adminData.password);
+      // Hash the provided password
+      const hashedPassword = await this.#hashPassword("Admin@2025");
 
       const user = await tx.user.create({
         data: {
@@ -236,8 +241,8 @@ async searchTeacher(query) {
             throw new Error(`Email ${admin.email} already exists`);
           }
 
-          // Hash the password
-          const hashedPassword = await this.#hashPassword(admin.password);
+          // Use default admin password
+      const hashedPassword = await this.#hashPassword("Admin@2025");
 
           const user = await tx.user.create({
             data: {
@@ -300,12 +305,10 @@ async searchTeacher(query) {
     });
   }
 
-async editStudent(studentId, studentData) {
-  console.log(studentId, 'studentId');
+  async editStudent(studentId, studentData) {
     if (!studentId || isNaN(parseInt(studentId))) {
       throw new Error("Invalid student ID");
     }
-    console.log(studentId, 'studentData');
     return prisma.$transaction(async (tx) => {
       let updatedUser = null;
       if (

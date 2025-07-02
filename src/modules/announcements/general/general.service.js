@@ -1,8 +1,8 @@
-import prisma from "../../../common/database/prismaClient.js";
+import prisma from '../../../common/database/prismaClient.js';
+import SocketService from '../../../common/utils/socket.service.js';
 
 class GeneralAnnouncementService {
   async createAnnouncement(adminId, data) {
-    console.log(data);
     return prisma.$transaction(async (tx) => {
       // Create the general announcement
       const announcement = await tx.general_Announcement.create({
@@ -16,7 +16,7 @@ class GeneralAnnouncementService {
 
       // If it's a poll, create the associated poll and options
       if (data.is_poll && data.poll) {
-        const poll = await tx.poll.create({
+        await tx.poll.create({
           data: {
             general_announcement_id: announcement.announcement_id,
             allow_multiple_answers: data.poll.allow_multiple_answers,
@@ -28,8 +28,6 @@ class GeneralAnnouncementService {
             },
           },
         });
-
-        return { ...announcement, poll };
       }
 
       // Handle attachments for regular announcements
@@ -37,19 +35,43 @@ class GeneralAnnouncementService {
         await tx.attachment.createMany({
           data: data.attachments.map((url) => ({
             url,
-            file_type: this.determineFileType(url), // Determine file type from URL
+            file_type: this.determineFileType(url),
             general_announcement_id: announcement.announcement_id,
           })),
         });
       }
 
+      // Fetch all users except the creator for notifications
+      const users = await tx.user.findMany({
+        where: { user_id: { not: adminId } },
+        select: { user_id: true },
+      });
+
+      const notificationData = users.map((user) => ({
+        user_id: user.user_id,
+        message: `New general announcement: ${data.title}`,
+        is_read: false,
+        general_announcement_id: announcement.announcement_id,
+      }));
+
+      if (notificationData.length > 0) {
+        await tx.notification.createMany({ data: notificationData });
+      }
+
+      // Fetch full announcement for return and socket event
       const fullAnnouncement = await tx.general_Announcement.findUnique({
         where: { announcement_id: announcement.announcement_id },
         include: {
-          poll: true,
+          poll: { include: { options: true, responses: true } },
           attachments: true,
           admin: { include: { user: true } },
         },
+      });
+
+      // Emit socket event to all users
+      SocketService.emitEvent('platform_all', 'newGeneralAnnouncement', {
+        ...fullAnnouncement,
+        message: `New general announcement: ${data.title}`,
       });
 
       return fullAnnouncement;
@@ -61,16 +83,9 @@ class GeneralAnnouncementService {
     const announcements = await prisma.general_Announcement.findMany({
       skip,
       take: parseInt(limit),
-      orderBy: {
-        created_at: "desc",
-      },
+      orderBy: { created_at: 'desc' },
       include: {
-        poll: {
-          include: {
-            options: true,
-            responses: true,
-          },
-        },
+        poll: { include: { options: true, responses: true } },
         attachments: true,
         admin: { include: { user: true } },
         _count: { select: { comments: true } },
@@ -83,12 +98,7 @@ class GeneralAnnouncementService {
     const announcement = await prisma.general_Announcement.findUnique({
       where: { announcement_id: parseInt(announcementId) },
       include: {
-        poll: {
-          include: {
-            options: true,
-            responses: true,
-          },
-        },
+        poll: { include: { options: true, responses: true } },
         attachments: true,
         admin: { include: { user: true } },
         _count: { select: { comments: true } },
@@ -98,9 +108,54 @@ class GeneralAnnouncementService {
   }
 
   async updateAnnouncement(announcementId, data) {
-    return prisma.general_Announcement.update({
+    const announcement = await prisma.general_Announcement.findUnique({
       where: { announcement_id: parseInt(announcementId) },
-      data,
+      include: { admin: true },
+    });
+    if (!announcement) throw new Error('Announcement not found');
+
+    return prisma.$transaction(async (tx) => {
+      const updatedAnnouncement = await tx.general_Announcement.update({
+        where: { announcement_id: parseInt(announcementId) },
+        data,
+      });
+
+      // Notify users if title or content changed
+      if (data.title || data.content) {
+        const users = await tx.user.findMany({
+          where: { user_id: { not: announcement.admin_id } },
+          select: { user_id: true },
+        });
+
+        const notificationData = users.map((user) => ({
+          user_id: user.user_id,
+          message: `General announcement "${data.title || announcement.title}" updated`,
+          is_read: false,
+          general_announcement_id: announcement.announcement_id,
+        }));
+
+        if (notificationData.length > 0) {
+          await tx.notification.createMany({ data: notificationData });
+        }
+      }
+
+      // Fetch full announcement for return and socket event
+      const fullAnnouncement = await tx.general_Announcement.findUnique({
+        where: { announcement_id: parseInt(announcementId) },
+        include: {
+          poll: { include: { options: true, responses: true } },
+          attachments: true,
+          admin: { include: { user: true } },
+        },
+      });
+
+      // Emit socket event
+      SocketService.emitEvent('platform_all', 'updateGeneralAnnouncement', {
+        ...fullAnnouncement,
+        message: `General announcement "${data.title || announcement.title}" updated`,
+      });
+
+      return fullAnnouncement;
     });
   }
 
@@ -110,12 +165,12 @@ class GeneralAnnouncementService {
     });
   }
 
-  // Helper method to determine file type from URL
   determineFileType(url) {
     if (url.endsWith('.pdf')) return 'pdf';
     if (url.endsWith('.doc') || url.endsWith('.docx')) return 'doc';
     if (url.match(/\.(jpeg|jpg|png|gif)$/i)) return 'img';
-    return 'pdf'; // Default to pdf if type can't be determined
+    if (url.endsWith('.mp4') || url.endsWith('.mov')) return 'video';
+    return 'pdf';
   }
 }
 

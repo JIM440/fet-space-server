@@ -118,9 +118,6 @@ class CourseService {
     const assignments = await prisma.assignment.findMany({
       where: { course_id: parseInt(courseId) },
     });
-
-    console.log(assignments)
-
     return assignments.length > 0 ? assignments : null;
   }
 

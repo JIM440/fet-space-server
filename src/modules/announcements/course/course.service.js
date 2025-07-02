@@ -1,8 +1,14 @@
 import prisma from '../../../common/database/prismaClient.js';
+import SocketService from '../../../common/utils/socket.service.js';
 
 class CourseAnnouncementService {
   async createAnnouncement(teacherId, courseId, data) {
-    console.log(data);
+    const course = await prisma.course.findUnique({
+      where: { course_id: courseId },
+      select: { title: true },
+    });
+    if (!course) throw new Error('Course not found');
+
     return prisma.$transaction(async (tx) => {
       // Create the course announcement
       const announcement = await tx.course_Announcement.create({
@@ -17,7 +23,7 @@ class CourseAnnouncementService {
 
       // If it's a poll, create the associated poll and options
       if (data.is_poll && data.poll) {
-        const poll = await tx.poll.create({
+        await tx.poll.create({
           data: {
             course_announcement_id: announcement.announcement_id,
             allow_multiple_answers: data.poll.allow_multiple_answers,
@@ -29,17 +35,6 @@ class CourseAnnouncementService {
             },
           },
         });
-
-        // Fetch full announcement with poll
-        const fullAnnouncement = await tx.course_Announcement.findUnique({
-          where: { announcement_id: announcement.announcement_id },
-          include: {
-            poll: true,
-            attachments: true,
-            teacher: { include: { user: true } },
-          },
-        });
-        return fullAnnouncement;
       }
 
       // Handle attachments for regular announcements
@@ -47,13 +42,41 @@ class CourseAnnouncementService {
         await tx.attachment.createMany({
           data: data.attachments.map((url) => ({
             url,
-            file_type: this.determineFileType(url), // Determine file type from URL
+            file_type: this.determineFileType(url),
             course_announcement_id: announcement.announcement_id,
           })),
         });
       }
 
-      // Fetch full announcement with attachments
+      // Fetch course participants for notifications
+      const users = await tx.course.findUnique({
+        where: { course_id: courseId },
+        include: {
+          courseStudents: { include: { student: true } },
+          courseTeachers: { include: { teacher: true } },
+        },
+      });
+
+      const notificationData = [
+        ...users.courseStudents.map((cs) => ({
+          user_id: cs.student.user_id,
+          message: `New announcement "${data.title}" in course: ${course.title}`,
+          is_read: false,
+          course_announcement_id: announcement.announcement_id,
+        })),
+        ...users.courseTeachers.map((ct) => ({
+          user_id: ct.teacher.user_id,
+          message: `New announcement "${data.title}" in course: ${course.title}`,
+          is_read: false,
+          course_announcement_id: announcement.announcement_id,
+        })),
+      ];
+
+      if (notificationData.length > 0) {
+        await tx.notification.createMany({ data: notificationData });
+      }
+
+      // Fetch full announcement for return and socket event
       const fullAnnouncement = await tx.course_Announcement.findUnique({
         where: { announcement_id: announcement.announcement_id },
         include: {
@@ -61,6 +84,12 @@ class CourseAnnouncementService {
           attachments: true,
           teacher: { include: { user: true } },
         },
+      });
+
+      // Emit socket event
+      SocketService.emitEvent(`course_${courseId}`, 'newAnnouncement', {
+        ...fullAnnouncement,
+        message: `New announcement "${data.title}" in course: ${course.title}`,
       });
 
       return fullAnnouncement;
@@ -73,16 +102,9 @@ class CourseAnnouncementService {
       where: { course_id: courseId },
       skip,
       take: parseInt(limit),
-      orderBy: {
-        created_at: 'desc',
-      },
+      orderBy: { created_at: 'desc' },
       include: {
-        poll: {
-          include: {
-            options: true,
-            responses: true,
-          },
-        },
+        poll: { include: { options: true, responses: true } },
         attachments: true,
         teacher: { include: { user: true } },
         _count: { select: { comments: true } },
@@ -95,12 +117,7 @@ class CourseAnnouncementService {
     const announcement = await prisma.course_Announcement.findUnique({
       where: { announcement_id: parseInt(announcementId) },
       include: {
-        poll: {
-          include: {
-            options: true,
-            responses: true,
-          },
-        },
+        poll: { include: { options: true, responses: true } },
         attachments: true,
         teacher: { include: { user: true } },
         _count: { select: { comments: true } },
@@ -110,10 +127,68 @@ class CourseAnnouncementService {
   }
 
   async updateAnnouncement(announcementId, data) {
-    return prisma.course_Announcement.update({
+    const announcement = await prisma.course_Announcement.findUnique({
       where: { announcement_id: parseInt(announcementId) },
-      data,
+      include: { course: { select: { title: true } } },
     });
+    if (!announcement) throw new Error('Announcement not found');
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedAnnouncement = await tx.course_Announcement.update({
+        where: { announcement_id: parseInt(announcementId) },
+        data,
+      });
+
+      // Notify users if title or content changed
+      if (data.title || data.content) {
+        const users = await tx.course.findUnique({
+          where: { course_id: announcement.course_id },
+          include: {
+            courseStudents: { include: { student: true } },
+            courseTeachers: { include: { teacher: true } },
+          },
+        });
+
+        const notificationData = [
+          ...users.courseStudents.map((cs) => ({
+            user_id: cs.student.user_id,
+            message: `Announcement "${data.title || announcement.title}" updated in course: ${announcement.course.title}`,
+            is_read: false,
+            course_announcement_id: announcement.announcement_id,
+          })),
+          ...users.courseTeachers.map((ct) => ({
+            user_id: ct.teacher.user_id,
+            message: `Announcement "${data.title || announcement.title}" updated in course: ${announcement.course.title}`,
+            is_read: false,
+            course_announcement_id: announcement.announcement_id,
+          })),
+        ];
+
+        if (notificationData.length > 0) {
+          await tx.notification.createMany({ data: notificationData });
+        }
+      }
+
+      // Fetch full announcement for return and socket event
+      const fullAnnouncement = await tx.course_Announcement.findUnique({
+        where: { announcement_id: parseInt(announcementId) },
+        include: {
+          poll: { include: { options: true, responses: true } },
+          attachments: true,
+          teacher: { include: { user: true } },
+        },
+      });
+
+      // Emit socket event
+      SocketService.emitEvent(`course_${announcement.course_id}`, 'updateAnnouncement', {
+        ...fullAnnouncement,
+        message: `Announcement "${data.title || announcement.title}" updated in course: ${announcement.course.title}`,
+      });
+
+      return fullAnnouncement;
+    });
+
+    return result;
   }
 
   async deleteAnnouncement(announcementId) {
@@ -122,13 +197,12 @@ class CourseAnnouncementService {
     });
   }
 
-  // Helper method to determine file type from URL
   determineFileType(url) {
     if (url.endsWith('.pdf')) return 'pdf';
     if (url.endsWith('.doc') || url.endsWith('.docx')) return 'doc';
     if (url.match(/\.(jpeg|jpg|png|gif)$/i)) return 'img';
     if (url.endsWith('.mp4') || url.endsWith('.mov')) return 'video';
-    return 'unknown'; // Updated default to 'unknown' for clarity
+    return 'unknown';
   }
 }
 

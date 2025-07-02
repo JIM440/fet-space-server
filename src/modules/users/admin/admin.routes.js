@@ -67,7 +67,7 @@ router.put(
 
 router.get(
   "/admins",
-  authMiddleware(["SuperAdmin, Admin"]),
+  authMiddleware(["Admin", "SuperAdmin"]),
   AdminController.getAllAdmins
 );
 router.post(
