@@ -219,13 +219,14 @@ class AdminService {
           phone_number: adminData.phone_number,
         },
       });
-      await tx.admin.create({
+      const admin = await tx.admin.create({
         data: {
           user_id: user.user_id,
+          is_super_admin: !!adminData.is_super_admin,
         },
       });
       // Return user details
-      return user;
+      return {...user, ...admin};
     });
   }
 

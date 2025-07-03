@@ -5,8 +5,9 @@ CREATE TABLE `User` (
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `phone_number` VARCHAR(191) NULL,
-    `role` ENUM('Student', 'Teacher', 'Admin', 'SuperAdmin') NOT NULL,
-    `refreshToken` VARCHAR(191) NULL,
+    `role` ENUM('Student', 'Teacher', 'Admin') NOT NULL,
+    `refreshToken` TEXT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `User_email_key`(`email`),
     PRIMARY KEY (`user_id`)
@@ -15,6 +16,7 @@ CREATE TABLE `User` (
 -- CreateTable
 CREATE TABLE `Teacher` (
     `user_id` INTEGER NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`user_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -26,6 +28,7 @@ CREATE TABLE `Student` (
     `nationality` VARCHAR(191) NULL,
     `level` VARCHAR(191) NOT NULL,
     `institutional_email` VARCHAR(191) NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Student_matricule_number_key`(`matricule_number`),
     UNIQUE INDEX `Student_institutional_email_key`(`institutional_email`),
@@ -35,6 +38,8 @@ CREATE TABLE `Student` (
 -- CreateTable
 CREATE TABLE `Admin` (
     `user_id` INTEGER NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `is_super_admin` BOOLEAN NOT NULL DEFAULT false,
 
     PRIMARY KEY (`user_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -44,8 +49,13 @@ CREATE TABLE `Course` (
     `course_id` INTEGER NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(191) NOT NULL,
     `subtitle` VARCHAR(191) NULL,
+    `code` VARCHAR(191) NOT NULL,
+    `description` TEXT NOT NULL,
+    `join_code` VARCHAR(191) NOT NULL,
     `teacher_id` INTEGER NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    UNIQUE INDEX `Course_join_code_key`(`join_code`),
     PRIMARY KEY (`course_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -53,6 +63,7 @@ CREATE TABLE `Course` (
 CREATE TABLE `Course_Teacher` (
     `course_id` INTEGER NOT NULL,
     `teacher_id` INTEGER NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`course_id`, `teacher_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -61,6 +72,7 @@ CREATE TABLE `Course_Teacher` (
 CREATE TABLE `Course_Student` (
     `course_id` INTEGER NOT NULL,
     `student_id` INTEGER NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`course_id`, `student_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -70,9 +82,10 @@ CREATE TABLE `Assignment` (
     `assignment_id` INTEGER NOT NULL AUTO_INCREMENT,
     `course_id` INTEGER NOT NULL,
     `title` VARCHAR(191) NOT NULL,
-    `description` VARCHAR(191) NULL,
+    `description` TEXT NOT NULL,
     `teacher_id` INTEGER NOT NULL,
     `due_date` DATETIME(3) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`assignment_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -83,6 +96,8 @@ CREATE TABLE `Assignment_Submission` (
     `assignment_id` INTEGER NOT NULL,
     `student_id` INTEGER NOT NULL,
     `submitted_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `comment` VARCHAR(191) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`submission_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -91,7 +106,7 @@ CREATE TABLE `Assignment_Submission` (
 CREATE TABLE `Course_Content` (
     `content_id` INTEGER NOT NULL AUTO_INCREMENT,
     `course_id` INTEGER NOT NULL,
-    `title` VARCHAR(191) NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`content_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -101,6 +116,7 @@ CREATE TABLE `Revision_Question` (
     `question_id` INTEGER NOT NULL AUTO_INCREMENT,
     `course_id` INTEGER NOT NULL,
     `file_url` VARCHAR(191) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`question_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -110,8 +126,8 @@ CREATE TABLE `Course_Announcement` (
     `announcement_id` INTEGER NOT NULL AUTO_INCREMENT,
     `course_id` INTEGER NOT NULL,
     `teacher_id` INTEGER NOT NULL,
-    `title` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NULL,
+    `title` VARCHAR(191) NULL,
+    `content` TEXT NULL,
     `is_poll` BOOLEAN NOT NULL DEFAULT false,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -122,8 +138,8 @@ CREATE TABLE `Course_Announcement` (
 CREATE TABLE `General_Announcement` (
     `announcement_id` INTEGER NOT NULL AUTO_INCREMENT,
     `admin_id` INTEGER NOT NULL,
-    `title` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NULL,
+    `title` VARCHAR(191) NULL,
+    `content` TEXT NOT NULL,
     `is_poll` BOOLEAN NOT NULL DEFAULT false,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -137,6 +153,7 @@ CREATE TABLE `Poll` (
     `course_announcement_id` INTEGER NULL,
     `allow_multiple_answers` BOOLEAN NOT NULL,
     `type` ENUM('general', 'course') NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Poll_general_announcement_id_key`(`general_announcement_id`),
     UNIQUE INDEX `Poll_course_announcement_id_key`(`course_announcement_id`),
@@ -148,6 +165,7 @@ CREATE TABLE `Poll_Option` (
     `option_id` INTEGER NOT NULL AUTO_INCREMENT,
     `poll_id` INTEGER NOT NULL,
     `content` VARCHAR(191) NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`option_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -159,6 +177,7 @@ CREATE TABLE `Poll_Response` (
     `poll_option_id` INTEGER NOT NULL,
     `user_id` INTEGER NOT NULL,
     `responded_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`response_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -180,13 +199,14 @@ CREATE TABLE `Comment` (
 CREATE TABLE `Attachment` (
     `attachment_id` INTEGER NOT NULL AUTO_INCREMENT,
     `url` VARCHAR(191) NOT NULL,
-    `file_type` ENUM('pdf', 'doc', 'img') NOT NULL,
+    `file_type` ENUM('pdf', 'docx', 'doc', 'img', 'ppt', 'video') NOT NULL,
     `course_content_id` INTEGER NULL,
     `assignment_id` INTEGER NULL,
     `assignment_submission_id` INTEGER NULL,
     `general_announcement_id` INTEGER NULL,
     `course_announcement_id` INTEGER NULL,
     `revision_questions_id` INTEGER NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`attachment_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -201,6 +221,7 @@ CREATE TABLE `Notification` (
     `course_content_id` INTEGER NULL,
     `course_announcement_id` INTEGER NULL,
     `general_announcement_id` INTEGER NULL,
+    `revision_questions_id` INTEGER NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`notification_id`)
@@ -319,3 +340,6 @@ ALTER TABLE `Notification` ADD CONSTRAINT `Notification_course_announcement_id_f
 
 -- AddForeignKey
 ALTER TABLE `Notification` ADD CONSTRAINT `Notification_general_announcement_id_fkey` FOREIGN KEY (`general_announcement_id`) REFERENCES `General_Announcement`(`announcement_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Notification` ADD CONSTRAINT `Notification_revision_questions_id_fkey` FOREIGN KEY (`revision_questions_id`) REFERENCES `Revision_Question`(`question_id`) ON DELETE CASCADE ON UPDATE CASCADE;

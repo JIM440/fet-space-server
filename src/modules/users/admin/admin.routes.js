@@ -51,7 +51,11 @@ router.post(
   authMiddleware(["Admin", "SuperAdmin"]),
   AdminController.addStudent
 );
-router.post('/students/bulk', authMiddleware(['Admin', 'SuperAdmin']), AdminController.addMultipleStudents);
+router.post(
+  "/students/bulk",
+  authMiddleware(["Admin", "SuperAdmin"]),
+  AdminController.addMultipleStudents
+);
 router.delete(
   "/students/:studentId",
   authMiddleware(["Admin", "SuperAdmin"]),

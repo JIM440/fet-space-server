@@ -26,9 +26,6 @@ async login(req, res) {
   if (role === "Admin") {
     const adminData = await prisma.admin.findUnique({
       where: { user_id: user.user_id },
-      include: {
-        generalAnnouncements: true,
-      },
     });
     roleData = adminData;
   }
